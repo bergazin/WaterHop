@@ -117,7 +117,7 @@ class WaterTranslationRotationMove(Move):
 
     def __init__(self, structure, protein_atoms, water_name='WAT', radius=1.85*unit.nanometers):
         #initialize self attributes
-        self.radius = radius #
+        self.radius = radius
         self.water_name = water_name
         self.water_residues = [] #contains indices of the atoms of the waters
         self.protein_atoms = protein_atoms #contains indices of the atoms in the protein residues
@@ -133,7 +133,17 @@ class WaterTranslationRotationMove(Move):
                    water_mol.append(atom.index) #append the index of each of the atoms of the water residue
                 self.water_residues.append(water_mol)#append the water atom indices as a self attribute (above)
 
-
+        residues = structure.topology.residues()
+        for res in residues:
+            if res in ['GLY', 'ALA','VAL','LEU','ILE','PRO','PHE','TYR','TRP','SER','THR','CYS','MET','ASN','GLN','LYS','ARG','HIS','ASP','GLU']:
+                atom_names = [] 
+                atom_index = [] 
+                for atom in res.atoms(): 
+                    atom_names.append(atom.name) 
+                    atom_index.append(atom.index) 
+                    if 'CA' in atom_names: 
+                        self.protein_atoms = self.protein_atoms+atom_index
+                        
         #set more self attributes
         #self.atom_indices is used to define the alchemically treated region
         #of the system, in this case the first water in the system
@@ -247,14 +257,14 @@ class WaterTranslationRotationMove(Move):
                             masses = self.protein_mass) #passes in list of the proteins atoms masses
 
         #pick random water within the sphere radius
-        dist_boolean = 0
+        is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
-        while dist_boolean == 0:
+        while not is_inside_sphere:
             #water_choice = np.random.choice(water_residues)
-            #water_index = np.random.choice(range(len(self.water_residues))) #chooses a random water number (based on the range of the length of the list containing the water atoms indices)
-            #water_choice = self.water_residues[water_index] #pass the random water number into wat_res to get the indices of its atoms.
-
-            water_choice = self.water_residues[2]
+            water_index = np.random.choice(range(len(self.water_residues))) #chooses a random water number (based on the range of the length of the list containing the water atoms indices)
+            water_choice = self.water_residues[water_index] #pass the random water number into wat_res to get the indices of its atoms.
+            #water_choice = self.water_residues[2]
+            
             #We now have the the indices of the random waters atoms
             oxygen_pos = start_pos[water_choice[0]] # pass the first atom indice of the random water, get the starting positions of that waters atoms
             #get the distance between the randomly chosen water and the proteins center of mass
@@ -263,7 +273,7 @@ class WaterTranslationRotationMove(Move):
             print('water_distance', water_distance)
             #If the waters distance is <= to the specified radius
             if water_distance <= (self.radius.value_in_unit(unit.nanometers)):
-                dist_boolean = 1
+                is_inside_sphere = True
             print('water_choice', water_choice)
         #replace chosen water's positions/velocities with alchemical water
         for i in range(3):
@@ -291,39 +301,32 @@ class WaterTranslationRotationMove(Move):
         #get the position of the system from the context
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
         protein_pos = before_move_pos[self.protein_atoms] #gets the positions from the indices of the atoms in the protein residues in relation to the system
-        #water_pos = before_move_pos[self.atom_indices] # gets positions of the alchemical waters atoms
 
         #find the center of mass and the displacement
-        prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
-        print("prot_com", prot_com)
-        print("prot_com._value", prot_com._value)
-        #water_com = self.getCenterOfMass(positions=water_pos, masses=self.water_mass) #gets protein COM
-        print('before_move_pos', before_move_pos[self.atom_indices])
-
+        prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) 
         sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
         movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
+
         print("oxygen_indices??", movePos[self.atom_indices[0]])
-        oxygen = (movePos[self.atom_indices[0]])
-        print("oxygen value???",oxygen._value)
         print('movePos LOOK HEREEEEEEEEEE', movePos[self.atom_indices]) #gets positions of the alchemical waters atoms from the context
         print('center of mass', prot_com) #prints the protein COM
         print('Water coord', self.atom_indices) #prints alchemical waters atoms indices
 
         #first atom in the water molecule (which is Oxygen) was used to measure the distance
-        water_dist = movePos[self.atom_indices[0]] - prot_com #estimate distance of the water from the proteins com.
-        #water_dist = movePos[water_com - prot_com] #here, distance of the alch. water com from the protein com
-
-        print('water_dist._value', water_dist._value)
+        # w.d = translated position of the oxygen in respect to the protein
+        # w.d here is a vector
+        water_displacement = movePos[self.atom_indices[0]] - prot_com 
+        print('water_displacement._value', water_displacement._value)
 
         #TODO: make water within radius selection correctly handle PBC
-        print('water_dist._value', np.linalg.norm(water_dist._value)) #prints alch. waters numerical euclidean distance
+        print('water_displacement._value', np.linalg.norm(water_displacement._value)) #prints alch. waters numerical euclidean distance
         print('self.radius._value', self.radius._value) #prints numerical value of radius
 
         #if the alchemical water is within the radius, translate it
-        if np.linalg.norm(water_dist._value) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
+        if np.linalg.norm(water_displacement._value) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
             for index, resnum in enumerate(self.atom_indices):
                 # positions of the the alch. water atoms - distance of the alch. water from protein com + sphere displacement
-                movePos[resnum] = movePos[resnum] - water_dist + sphere_displacement #new positions of the alch water
+                movePos[resnum] = movePos[resnum] - water_displacement + sphere_displacement #new positions of the alch water
                 print('before', before_move_pos[resnum])
                 print('after', movePos[resnum])
             context.setPositions(movePos) #Sets the positions of particles
