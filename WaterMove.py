@@ -133,16 +133,16 @@ class WaterTranslationRotationMove(Move):
                    water_mol.append(atom.index) #append the index of each of the atoms of the water residue
                 self.water_residues.append(water_mol)#append the water atom indices as a self attribute (above)
 
-        residues = structure.topology.residues()
-        for res in residues:
-            if res in ['GLY', 'ALA','VAL','LEU','ILE','PRO','PHE','TYR','TRP','SER','THR','CYS','MET','ASN','GLN','LYS','ARG','HIS','ASP','GLU']:
-                atom_names = [] 
-                atom_index = [] 
-                for atom in res.atoms(): 
-                    atom_names.append(atom.name) 
-                    atom_index.append(atom.index) 
-                    if 'CA' in atom_names: 
-                        self.protein_atoms = self.protein_atoms+atom_index
+        #residues = structure.topology.residues()
+        #for res in residues:
+        #    if res in ['GLY', 'ALA','VAL','LEU','ILE','PRO','PHE','TYR','TRP','SER','THR','CYS','MET','ASN','GLN','LYS','ARG','HIS','ASP','GLU']:
+        #        atom_names = [] 
+        #        atom_index = [] 
+        #        for atom in res.atoms(): 
+        #            atom_names.append(atom.name) 
+        #            atom_index.append(atom.index) 
+        #            if 'CA' in atom_names: 
+        #                self.protein_atoms = self.protein_atoms+atom_index
                         
         #set more self attributes
         #self.atom_indices is used to define the alchemically treated region
