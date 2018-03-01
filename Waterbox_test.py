@@ -14,8 +14,8 @@ import logging
 
 def runNCMC(platform_name, nstepsNC, nprop, outfname):
     #Generate the ParmEd Structure
-    prmtop = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.prmtop'
-    inpcrd = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.inpcrd'
+    prmtop = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.prmtop' #topology
+    inpcrd = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.inpcrd' #coordinates
     structure = parmed.load_file(prmtop, xyz=inpcrd)
     print('Structure: %s' % structure.topology)
 
@@ -30,14 +30,26 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
             'outfname' : 'testing',
             'verbose' : True}
 
-    import mdtraj as md
-    wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
-    water_atom = wat.topology.select('resid 1')
-    print(water_atom)
+    ## Get the second water in the system, this acts as the "protein" in pure water tests
+    # Documentation: http://parmed.github.io/ParmEd/html/amber.html#atom-element-selections
+    # http://amber-md.github.io/pytraj/latest/atom_mask_selection.html
+    water_structure = parmed.load_file(prmtop)
+    protein_atoms = water_structure[':2']
+    print(protein_atoms)
+    
+    ## To select the protein residues, and not the ligand residues...
+    #protein_only_structure = parmed.load_file(prmtop)
+    #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
 
-    #Define the 'model' object we are perturbing here.
+    ## Old way
+    #import mdtraj as md
+    #wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
+    #water_atom = wat.topology.select('resid 1')
+    #print(water_atom)
+
+    # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
-    water = WaterTranslationRotationMove(structure, water_atom, water_name='WAT')
+    water = WaterTranslationRotationMove(structure, protein_atoms, water_name='WAT')
     water.topology = structure.topology
     water.positions = structure.positions
 
