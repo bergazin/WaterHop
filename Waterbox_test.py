@@ -1,5 +1,5 @@
 from __future__ import print_function
-from WaterTranslationRotation import WaterTranslationRotationMove
+from WaterMove import WaterTranslationRotationMove
 from blues.engine import MoveEngine
 from blues import utils
 from openmmtools import testsystems
@@ -41,7 +41,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     #protein_only_structure = parmed.load_file(prmtop)
     #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
 
-    ## Old way
+    ## Old water selesction way
     #import mdtraj as md
     #wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
     #water_atom = wat.topology.select('resid 1')
@@ -53,7 +53,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     water.topology = structure.topology
     water.positions = structure.positions
 
-	# Initialize object that proposes moves.
+    # Initialize object that proposes moves.
     mover = MoveEngine(water)
 
     # Generate the MD, NCMC, ALCHEMICAL Simulation objects
@@ -73,8 +73,8 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
 
     # Run BLUES Simulation
     blues = Simulation(simulations, mover, **opt)
-    #blues.runMC(opt['nIter'])
-    blues.run(opt['nIter'])
+    #blues.runMC(opt['nIter']) #MC
+    blues.run(opt['nIter']) #NCMC
 
 
 parser = OptionParser()
