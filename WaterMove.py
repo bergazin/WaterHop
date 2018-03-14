@@ -296,59 +296,51 @@ class WaterTranslationRotationMove(Move):
         prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
         sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
         movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
-
-        print('movePos LOOK HEREEEEEEEEEE', movePos[self.atom_indices]) #gets positions of the alchemical waters atoms from the context
-        print('center of mass', prot_com) #prints the protein COM
-        print('Water coord', self.atom_indices) #prints alchemical waters atoms indices
-
         #first atom in the water molecule (which is Oxygen) was used to measure the distance
-        water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate distance of the water from the proteins com.
+        water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate "distance" of the water from the proteins com.
+        
+        #TODO: make water within radius selection correctly handle PBC
         print('water_displacement._value_VECTOR', water_displacement._value)
         print('self.radius._value', self.radius._value)
-
+        
+        #Look at alch. waters xyz coords
         minx = unit.quantity.Quantity(100, unit.nanometers)
         maxx = unit.quantity.Quantity(-100, unit.nanometers)
+        miny = unit.quantity.Quantity(100, unit.nanometers)
+        maxy = unit.quantity.Quantity(-100, unit.nanometers)
+        minz = unit.quantity.Quantity(100, unit.nanometers)
+        maxz = unit.quantity.Quantity(-100, unit.nanometers)
         for index, resnum in enumerate(self.atom_indices):
             if movePos[resnum][0]<minx:
                 minx = movePos[resnum][0]
             if movePos[resnum][0]>maxx:
                 maxx = movePos[resnum][0]
-        print("Min x:", minx)
-        print("Max x:", maxx)
-
-        miny = unit.quantity.Quantity(100, unit.nanometers)
-        maxy = unit.quantity.Quantity(-100, unit.nanometers)
-        for index, resnum in enumerate(self.atom_indices):
             if movePos[resnum][1]<miny:
                 miny = movePos[resnum][1]
             if movePos[resnum][1]>maxy:
                 maxy = movePos[resnum][1]
-        print("Min y:", miny)
-        print("Max y:", maxy)
-
-        minz = unit.quantity.Quantity(100, unit.nanometers)
-        maxz = unit.quantity.Quantity(-100, unit.nanometers)
-        for index, resnum in enumerate(self.atom_indices):
             if movePos[resnum][2]<minz:
                 minz = movePos[resnum][2]
             if movePos[resnum][2]>maxz:
                 maxz = movePos[resnum][2]
+        print("Min x:", minx)
+        print("Max x:", maxx)
+        print("Min y:", miny)
+        print("Max y:", maxy)
         print("Min z:", minz)
         print("Max z:", maxz)
         
         x = [3.74352080, #nanometers
              3.77959940,
              3.77731150]
-        #x = [unit.quantity.Quantity(3.74352080,unit.nanometers),
-        #     unit.quantity.Quantity(3.77959940,unit.nanometers),
-        #     unit.quantity.Quantity(3.77731150,unit.nanometers)]
+        
         #if the alchemical water is within the radius, translate it
-        if np.linalg.norm(water_displacement._value) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
+        if np.linalg.norm(water_displacement._value) <= self.radius._value: #see if norm of alch. water is within defined radius
             for index, resnum in enumerate(self.atom_indices):
                 # positions of the the alch. water atoms - distance of the alch. water from protein com + sphere displacement
                 movePos[resnum] = movePos[resnum] - water_displacement + sphere_displacement #new positions of the alch water
+                
                 #wrap each atom individually, check if values need to be reset, mod calculates the remainder
-                print("movePos_type = ", type(movePos))
                 # increase x coord gradually - should go from 0-3.7 and then wrap around
                 #movePos[resnum][0] = unit.quantity.Quantity(0.0, unit.nanometers)#0.0
                 #inc = unit.quantity.Quantity(0.1, unit.nanometers)#0.1 #move water in increments - should hit edge (~3.7nm) then wrap around (to 0)
@@ -370,6 +362,7 @@ class WaterTranslationRotationMove(Move):
                     val = movePos[resnum][index].value_in_unit(unit.nanometers) % x[index]
                     movePos[resnum][index] = unit.quantity.Quantity(val, unit.nanometers)
                 print("movePos[resnum]", movePos[resnum])
+                
                 '''
                 x_coords = []
                 y_coords = []
