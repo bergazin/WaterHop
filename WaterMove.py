@@ -220,14 +220,11 @@ class WaterTranslationRotationMove(Move):
         center_of_mass = parmed.geometry.center_of_mass(coordinates, masses) * positions.unit
         return center_of_mass
 
-    def beforeMove(self, nc_context):
+   def beforeMove(self, nc_context):
         """
-        Temporary fterHop/unction (until multiple alchemical regions are supported),
-        which is performed at the beginning of a ncmc iteration. Selects
-        a random water within self.radius of the protein's center of mass
-        and switches the positions and velocities with the alchemical water
-        defined by self.atom_indices, effecitvely duplicating mulitple
-        alchemical region support.
+        Temporary fterHop/unction (until multiple alchemical regions are supported), which is performed at the beginning of a 
+        ncmc iteration. Selects a random water within self.radius of the protein's center of mass and switches the positions 
+        and velocities with the alchemical water defined by self.atom_indices, effecitvely duplicating mulitple alchemical region support.
         Parameters
         ----------
         nc_context: simtk.openmm Context object
@@ -241,29 +238,32 @@ class WaterTranslationRotationMove(Move):
         switch_pos = np.copy(start_pos)*start_pos.unit #starting position (a shallow copy) is * by start_pos.unit to retain units
         switch_vel = np.copy(start_vel)*start_vel.unit #starting vel (a shallow copy) is * by start_pos.unit to retain units
         print('switch_pos', switch_pos)
-        #Get the center of mass of the protein, need position (which eventually gets converted to coordinates) and masses
+
         prot_com = self.getCenterOfMass(switch_pos[self.protein_atoms], #passes in a copy of the protein atoms starting position
                             masses = self.protein_mass) #passes in list of the proteins atoms masses
-
-        #pick random water within the sphere radius
         is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
         while not is_inside_sphere:
             #water_choice = np.random.choice(water_residues)
-            water_index = np.random.choice(range(len(self.water_residues))) #chooses a random water number (based on the range of the length of the list containing the water atoms indices)
-            water_choice = self.water_residues[water_index] #pass the random water number into wat_res to get the indices of its atoms.
-
-            #water_choice = self.water_residues[2]
-            #We now have the the indices of the random waters atoms
-            oxygen_pos = start_pos[water_choice[0]] # pass the first atom indice of the random water, get the starting positions of that waters atoms
-            #get the distance between the randomly chosen water and the proteins center of mass
-            #np.linalg.norm(x - y)) will give you Euclidean distance between the vectors x and y (ie "ordinary" straight-line distance between two points in Euclidean space).
-            water_distance = np.linalg.norm(oxygen_pos._value - prot_com._value)
-            print('water_distance', water_distance)
-            #If the waters distance is <= to the specified radius
-            if water_distance <= (self.radius.value_in_unit(unit.nanometers)):
+            water_index = np.random.choice(range(len(self.water_residues)))
+            if water_index > 1: #Don't want to switch alch. water vel/pos with itself or the 2nd water in the system (which is acting as protein)
+                water_choice = self.water_residues[water_index]
+            #print('water_choice', water_choice)
+            import mdtraj
+            #oxygen_pos = start_pos[water_choice[0]] #Gets XYZ coords of oxygen
+            oxygen_pos = start_pos[water_choice[0]]
+            #print("oxygen_pos",oxygen_pos)
+            protein_choice = self.water_residues[1]
+            protein_pos = start_pos[protein_choice[0]] #proteins
+            #print("protein_pos", protein_pos)
+            traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
+            pairs = traj.topology.select_pairs(oxygen_pos._value, protein_pos._value)
+            #print("pairs", pairs)
+            water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
+            #print("water_distance", water_distance)
+            water_dist = np.linalg.norm(water_distance)
+            if water_dist <= (self.radius.value_in_unit(unit.nanometers)):
                 is_inside_sphere = True
-            print('water_choice', water_choice)
 
         #replace chosen water's positions/velocities with alchemical water
         for i in range(3):
@@ -279,7 +279,6 @@ class WaterTranslationRotationMove(Move):
         print('after_switch', switch_pos[self.atom_indices[0]]) #prints the new indices of the alchemical water
         nc_context.setPositions(switch_pos)
         nc_context.setVelocities(switch_vel)
-        print("This is the beforeMove function")
         return nc_context
 
 
@@ -296,110 +295,27 @@ class WaterTranslationRotationMove(Move):
         prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
         sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
         movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
+        print('movePos LOOK HEREEEEEEEEEE', movePos[self.atom_indices]) #gets positions of the alchemical waters atoms from the context
+        print('center of mass', prot_com) #prints the protein COM
+        print('COM_TYPE', type(prot_com._value))
+        print('Water coord', self.atom_indices) #prints alchemical waters atoms indices
+
         #first atom in the water molecule (which is Oxygen) was used to measure the distance
-        water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate "distance" of the water from the proteins com.
+        #water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate distance of the water from the proteins com.
+        oxygen_pos = movePos[self.atom_indices[0]]
+        protein_choice = self.water_residues[1]
+        prot_pos = movePos[protein_choice[0]]
         
-        #TODO: make water within radius selection correctly handle PBC
-        print('water_displacement._value_VECTOR', water_displacement._value)
-        print('self.radius._value', self.radius._value)
-        
-        #Look at alch. waters xyz coords
-        minx = unit.quantity.Quantity(100, unit.nanometers)
-        maxx = unit.quantity.Quantity(-100, unit.nanometers)
-        miny = unit.quantity.Quantity(100, unit.nanometers)
-        maxy = unit.quantity.Quantity(-100, unit.nanometers)
-        minz = unit.quantity.Quantity(100, unit.nanometers)
-        maxz = unit.quantity.Quantity(-100, unit.nanometers)
-        for index, resnum in enumerate(self.atom_indices):
-            if movePos[resnum][0]<minx:
-                minx = movePos[resnum][0]
-            if movePos[resnum][0]>maxx:
-                maxx = movePos[resnum][0]
-            if movePos[resnum][1]<miny:
-                miny = movePos[resnum][1]
-            if movePos[resnum][1]>maxy:
-                maxy = movePos[resnum][1]
-            if movePos[resnum][2]<minz:
-                minz = movePos[resnum][2]
-            if movePos[resnum][2]>maxz:
-                maxz = movePos[resnum][2]
-        print("Min x:", minx)
-        print("Max x:", maxx)
-        print("Min y:", miny)
-        print("Max y:", maxy)
-        print("Min z:", minz)
-        print("Max z:", maxz)
-        
-        x = [3.74352080, #nanometers
-             3.77959940,
-             3.77731150]
+        traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
+        pairs = traj.topology.select_pairs(oxygen_pos._value, prot_pos._value)
+        water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
         
         #if the alchemical water is within the radius, translate it
-        if np.linalg.norm(water_displacement._value) <= self.radius._value: #see if norm of alch. water is within defined radius
+        if np.linalg.norm(water_distance) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
             for index, resnum in enumerate(self.atom_indices):
-                # positions of the the alch. water atoms - distance of the alch. water from protein com + sphere displacement
-                movePos[resnum] = movePos[resnum] - water_displacement + sphere_displacement #new positions of the alch water
-                
-                #wrap each atom individually, check if values need to be reset, mod calculates the remainder
-                # increase x coord gradually - should go from 0-3.7 and then wrap around
-                #movePos[resnum][0] = unit.quantity.Quantity(0.0, unit.nanometers)#0.0
-                #inc = unit.quantity.Quantity(0.1, unit.nanometers)#0.1 #move water in increments - should hit edge (~3.7nm) then wrap around (to 0)
-                #inc = 0.1
-                #box = unit.quantity.Quantity(3.74352080, unit.nanometers)#10.0 --
-                #for idx in range(1000): # Move to the Right
-                  #print("movePos[resnum][0]", movePos[resnum][0])
-                  #movePos[resnum][0]= movePos[resnum][0] + inc._value #movePos = movePos + inc
-                  #movePos[resnum][0]= movePos[resnum][0] % box #movePos = movePos % box
-                  #print("xmovement_right = ", movePos[resnum][0])
-                  #for idx in range(1000): # Move to the Left
-                    #movePos[resnum][0]= movePos[resnum][0] - inc #movePos = movePos - inc
-                    #movePos[resnum][0]= movePos[resnum][0] % box #movePos = movePos % box
-                    #print("xmovement_left = ", movePos[resnum][0])
-                    
-                #PBC: If the atoms are outside of the box, calculate the remainder and move back into the box  
-                for index in range(3): #The % (modulo) operator yields the remainder from the division of the first argument by the second.
-                    #movePos[resnum][index] = movePos[resnum][index] - int(movePos[resnum][index] / x[index]) * x[index]
-                    val = movePos[resnum][index].value_in_unit(unit.nanometers) % x[index]
-                    movePos[resnum][index] = unit.quantity.Quantity(val, unit.nanometers)
                 print("movePos[resnum]", movePos[resnum])
-                
-                '''
-                x_coords = []
-                y_coords = []
-                z_coords = []
-                for line in movePos:
-                    #print(line)
-                    x_coords.append(line[0])
-                    y_coords.append(line[1])
-                    z_coords.append(line[2])
-                print("movePos[resnum][0]", movePos[resnum][0])
-                print("movePos[resnum][1]", movePos[resnum][1])
-                print("movePos[resnum][2]", movePos[resnum][2])
-                print("Min X =", min(x_coords), "Max X =", max(x_coords))
-                print("Min Y =", min(y_coords), "Max Y =", max(y_coords))
-                print("Min Z =", min(z_coords), "Max Z =", max(z_coords))
-                #look at x min and max
-                if movePos[resnum][0] < min(x_coords):
-                    print("Alch water X coord:", movePos[resnum][0], "Min. X coord:", min(x_coords))
-                if movePos[resnum][0] > max(x_coords):
-                    print("Alch water X coord:", movePos[resnum][0], "Max. X coord:", max(x_coords))
-                #look at y min and max
-                if movePos[resnum][1] < min(y_coords):
-                    print("Alch water Y coord:", movePos[resnum][1], "Min. Y coord:", min(y_coords))
-                if movePos[resnum][1] > max(y_coords):
-                    print("Alch water Y coord:", movePos[resnum][1], "Max. Y coord:", max(y_coords))
-                #look at z min and max
-                if movePos[resnum][2] < min(z_coords):
-                    print("Alch water Z coord:", movePos[resnum][2], "Min. Z coord:", min(z_coords))
-                if movePos[resnum][2] > max(z_coords):
-                    print("Alch water Z coord:", movePos[resnum][2], "Max. Z coord:", max(z_coords))
-                print('Max. xyz values:', max(x_coords),max(y_coords),max(z_coords))
-                print('Min. xyz values:', min(x_coords),min(y_coords),min(z_coords))
-                '''
+                movePos[resnum] = movePos[resnum] - water_displacement + sphere_displacement #new positions of the alch water
                 print('before', before_move_pos[resnum])
                 print('after', movePos[resnum])
-
             context.setPositions(movePos)
-        #print(dir(context))
-        #print(context.__doc__())
         return context
