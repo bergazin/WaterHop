@@ -154,16 +154,7 @@ class WaterTranslationRotationMove(Move):
         self.protein_mass = self.getMasses(self.topology_protein)#Provides the mass of each of the proteins atoms
         self.water_positions = structure[self.atom_indices].positions
         self.protein_positions = structure[self.protein_atoms].positions
-        #print("self.atom_indices", self.atom_indices)
-        print("self.topology_protein", self.topology_protein)
-        print("self.topology_water", self.topology_water)
-        #print("self.water_mass", self.water_mass)
-        #print("self.protein_mass", self.protein_mass)
-        print("self.water_residues_all", self.water_residues)
-        print("self.water_residues_proW", self.water_residues[1:2])
-        print("water_residues_RANGE_LENGTH", range(len(self.water_residues)))
-        print("self.water_positions", self.water_positions)
-        print("self.protein_positions", self.protein_positions)
+
 
     def _random_sphere_point(self, radius):
         """function to generate a uniform random point
@@ -207,15 +198,6 @@ class WaterTranslationRotationMove(Move):
         masses : numpy.array
             np.array of particle masses
         """
-        print('masses', masses)
-        print('masses type', type(masses))
-        # masses = [element for tupl in masses for element in tupl]
-        # print('masses type2', type(masses))
-        # print('type2', type(masses[0]))
-        # print('masses[0]', masses[0]/ unit.dalton * unit.dalton) #first atoms mass / dalton*dalton, why?
-        # print('dir', dir(masses))
-        # print('value', positions.value_in_unit(positions.unit))
-        # print(positions) #positons: A list of 3-element Quantity tuples of dimension length representing the atomic positions for every atom in the system.
         coordinates = np.asarray(positions._value, np.float32) #gives the value of atomic positions as an array
         center_of_mass = parmed.geometry.center_of_mass(coordinates, masses) * positions.unit
         return center_of_mass
@@ -232,12 +214,9 @@ class WaterTranslationRotationMove(Move):
         """
         start_state = nc_context.getState(getPositions=True, getVelocities=True)
         start_pos = start_state.getPositions(asNumpy=True) #gets starting positions
-        print('start_pos', start_pos[self.atom_indices[0]]) #prints starting position of the first water atom
-
         start_vel = start_state.getVelocities(asNumpy=True) #gets starting velocities
         switch_pos = np.copy(start_pos)*start_pos.unit #starting position (a shallow copy) is * by start_pos.unit to retain units
         switch_vel = np.copy(start_vel)*start_vel.unit #starting vel (a shallow copy) is * by start_pos.unit to retain units
-        print('switch_pos', switch_pos)
 
         prot_com = self.getCenterOfMass(switch_pos[self.protein_atoms], #passes in a copy of the protein atoms starting position
                             masses = self.protein_mass) #passes in list of the proteins atoms masses
@@ -272,7 +251,6 @@ class WaterTranslationRotationMove(Move):
             #set indices of the randomly chosen waters atom equal to alchemical waters atom indices. Same w/ velocity
             switch_pos[water_choice[i]] = start_pos[self.atom_indices[i]]
             switch_vel[water_choice[i]] = start_vel[self.atom_indices[i]]
-            print("Velocities and positions have been switched")
 
         print('after_switch', switch_pos[self.atom_indices[0]]) #prints the new indices of the alchemical water
         nc_context.setPositions(switch_pos)
@@ -287,22 +265,18 @@ class WaterTranslationRotationMove(Move):
         """
         #get the position of the system from the context
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
-        protein_pos = before_move_pos[self.protein_atoms] #gets the positions from the indices of the atoms in the protein residues in relation to the system
-
+        protein_pos = before_move_pos[self.protein_atoms] 
+        
         #find the center of mass and the displacement
-        prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
-        sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
-        movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
-        print('movePos LOOK HEREEEEEEEEEE', movePos[self.atom_indices]) #gets positions of the alchemical waters atoms from the context
-        print('center of mass', prot_com) #prints the protein COM
-        print('COM_TYPE', type(prot_com._value))
-        print('Water coord', self.atom_indices) #prints alchemical waters atoms indices
-    
+        prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) 
+        sphere_displacement = self._random_sphere_point(self.radius) 
+        movePos = np.copy(before_move_pos)*before_move_pos.unit 
+        
         #water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate distance of the water from the proteins com.
         #Get index of alch. water oxygen
         oxygen_pos1 = np.array(self.atom_indices[0])
         oxygen_pos = oxygen_pos1.flatten() #flatten to turn into 1d array, otherwise error pops up about 0 dimensional array
-        print("oxygen_pos", oxygen_pos)
+
         #Get index of proteins oxygen
         protein_indices = self.water_residues[1]
         protein_choice1 = np.array(protein_indices[0])
@@ -311,13 +285,11 @@ class WaterTranslationRotationMove(Move):
         traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
         #pairs = traj.topology.select_pairs(oxygen_pos._value, prot_pos._value)
         pairs = traj.topology.select_pairs(protein_choice, oxygen_pos)
-        print(pairs)
         
         water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
-        print(water_distance)
-        #print(np.linalg.norm(water_distance._value))
+
         #if the alchemical water is within the radius, translate it
-        if np.linalg.norm(water_distance) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
+        if np.linalg.norm(water_distance) <= self.radius._value: 
             for index, resnum in enumerate(self.atom_indices):
                 print("movePos[resnum]", movePos[resnum])
                 movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
