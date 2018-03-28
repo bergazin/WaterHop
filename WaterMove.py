@@ -299,22 +299,30 @@ class WaterTranslationRotationMove(Move):
         print('center of mass', prot_com) #prints the protein COM
         print('COM_TYPE', type(prot_com._value))
         print('Water coord', self.atom_indices) #prints alchemical waters atoms indices
-
-        #first atom in the water molecule (which is Oxygen) was used to measure the distance
+    
         #water_displacement = movePos[self.atom_indices[0]] - prot_com #estimate distance of the water from the proteins com.
-        oxygen_pos = movePos[self.atom_indices[0]]
-        protein_choice = self.water_residues[1]
-        prot_pos = movePos[protein_choice[0]]
-        
+        #Get index of alch. water oxygen
+        oxygen_pos1 = np.array(self.atom_indices[0])
+        oxygen_pos = oxygen_pos1.flatten() #flatten to turn into 1d array, otherwise error pops up about 0 dimensional array
+        print("oxygen_pos", oxygen_pos)
+        #Get index of proteins oxygen
+        protein_indices = self.water_residues[1]
+        protein_choice1 = np.array(protein_indices[0])
+        protein_choice = protein_choice1.flatten()
+
         traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
-        pairs = traj.topology.select_pairs(oxygen_pos._value, prot_pos._value)
-        water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
+        #pairs = traj.topology.select_pairs(oxygen_pos._value, prot_pos._value)
+        pairs = traj.topology.select_pairs(protein_choice, oxygen_pos)
+        print(pairs)
         
+        water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
+        print(water_distance)
+        #print(np.linalg.norm(water_distance._value))
         #if the alchemical water is within the radius, translate it
         if np.linalg.norm(water_distance) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
             for index, resnum in enumerate(self.atom_indices):
                 print("movePos[resnum]", movePos[resnum])
-                movePos[resnum] = movePos[resnum] - water_displacement + sphere_displacement #new positions of the alch water
+                movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
                 print('before', before_move_pos[resnum])
                 print('after', movePos[resnum])
             context.setPositions(movePos)
