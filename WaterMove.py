@@ -248,19 +248,17 @@ class WaterTranslationRotationMove(Move):
             water_index = np.random.choice(range(len(self.water_residues)))
             if water_index > 1: #Don't want to switch alch. water vel/pos with itself or the 2nd water in the system (which is acting as protein)
                 water_choice = self.water_residues[water_index]
-            #print('water_choice', water_choice)
             import mdtraj
-            #oxygen_pos = start_pos[water_choice[0]] #Gets XYZ coords of oxygen
-            oxygen_pos = start_pos[water_choice[0]]
-            #print("oxygen_pos",oxygen_pos)
-            protein_choice = self.water_residues[1]
-            protein_pos = start_pos[protein_choice[0]] #proteins
-            #print("protein_pos", protein_pos)
-            traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
-            pairs = traj.topology.select_pairs(oxygen_pos._value, protein_pos._value)
-            #print("pairs", pairs)
+            oxygen_pos1 = np.array(self.atom_indices[0])
+            oxygen_pos = oxygen_pos1.flatten() #flatten to turn into 1d array, otherwise error pops up about 0 dimensional array
+            protein_indices = self.water_residues[1]
+            protein_choice1 = np.array(protein_indices[0])
+            protein_choice = protein_choice1.flatten()
+            
+            #Need to change traj 
+            #traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
+            pairs = traj.topology.select_pairs(oxygen_pos, protein_choice)
             water_distance = mdtraj.compute_distances(traj, pairs, periodic=True)
-            #print("water_distance", water_distance)
             water_dist = np.linalg.norm(water_distance)
             if water_dist <= (self.radius.value_in_unit(unit.nanometers)):
                 is_inside_sphere = True
