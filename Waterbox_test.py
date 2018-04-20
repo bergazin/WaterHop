@@ -42,11 +42,11 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     #protein_only_structure = parmed.load_file(prmtop)
     #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
 
-    ## Old water selection way
+    ## Old way
     import mdtraj as md
-    wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
-    water_atom = wat.topology.select('resid 1')
-    #print(water_atom)
+    wat = md.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
+    protein_atoms = wat.topology.select('resid 1916')
+    print("protein",protein_atoms)
     
     # Set mass of the carbon walls to zero, this fixes/restrains them in place
     # Set mass of the last water in the system to 0 to restrain in place
