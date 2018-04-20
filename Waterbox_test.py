@@ -64,8 +64,6 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
                 # Set atom mass to 0
                 atom.mass = 0.0 * unit.dalton
                 #print(atom.mass)
-
-
     
     # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
@@ -78,9 +76,20 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
 
     # Generate the MD, NCMC, ALCHEMICAL Simulation objects
     simulations = SimulationFactory(structure, mover, **opt)
-    #system = simulations.generateSystem(structure, **opt)
+    
+    system = simulations.generateSystem(structure, **opt)
+    # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
+    num_atoms = system.getNumParticles()
+    for index in range(num_atoms):
+        if index < 777 or index > 6517:
+            system.setParticleMass(index, 0*unit.daltons)
     simulations.createSimulationSet()
-    #alch_system = simulations.generateAlchSystem(system, water.atom_indices)
+    
+    alch_system = simulations.generateAlchSystem(system, water.atom_indices)
+    alch_num_atoms = alch_system.getNumParticles()
+    for index in range(alch_num_atoms):
+        if index < 777 or index > 6517:
+            alch_system.setParticleMass(index, 0*unit.daltons)
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
