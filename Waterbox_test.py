@@ -45,6 +45,12 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     ## Old way
     import mdtraj as md
     wat = md.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
+    
+    # Move the coordinates of each of the last waters atoms (the "protein") to the center of the system
+    wat.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
+    wat.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
+    wat.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
+    
     protein_atoms = wat.topology.select('resid 1916')
     print("protein",protein_atoms)
     
@@ -59,10 +65,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
                 atom.mass = 0.0 * unit.dalton
                 #print(atom.mass)
 
-    # Move the coordinates of each of the last waters atoms (the "protein") to the center of the system
-    wat.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
-    wat.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
-    wat.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
+
     
     # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
