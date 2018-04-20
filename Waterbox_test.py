@@ -68,19 +68,18 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     #system = simulations.generateSystem(structure, **opt)
     
     # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
-    num_atoms = system.getNumParticles()
+    num_atoms = simulations.system.getNumParticles()
     for index in range(num_atoms):
         if index < 777 or index > 6517:
-            system.setParticleMass(index, 0*unit.daltons)
+            simulations.system.setParticleMass(index, 0*unit.daltons)
     simulations.createSimulationSet()
     
     #Modify alchemical system
     #alch_system = simulations.generateAlchSystem(system, water.atom_indices)
-    alch_num_atoms = alch_system.getNumParticles()
+    alch_num_atoms = simulations.alch_system.getNumParticles()
     for index in range(alch_num_atoms):
         if index < 777 or index > 6517:
-            alch_system.setParticleMass(index, 0*unit.daltons)
-    
+            simulations.alch_system.setParticleMass(index, 0*unit.daltons)
     #after modifying the alch_system, need to pass it back to the SimulationFactory...
     simulations.alch_system = simulations.generateAlchSystem(alch_system, range(alch_num_atoms))
 
