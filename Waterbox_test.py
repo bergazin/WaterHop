@@ -35,9 +35,6 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     # Documentation: http://parmed.github.io/ParmEd/html/amber.html#atom-element-selections
     # http://amber-md.github.io/pytraj/latest/atom_mask_selection.html
     #water_structure = parmed.load_file(prmtop)
-    #protein_atoms = water_structure[':2']
-    #print("protein_atoms_NEW_TEST_345?", protein_atoms)
-
     ## To select the protein residues, and not the ligand residues...
     #protein_only_structure = parmed.load_file(prmtop)
     #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
