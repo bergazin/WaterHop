@@ -55,7 +55,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     for res in residues:
         if res.name == 'WAL' or res.index == 1916:
             for atom in res.atoms():
-                # Set carbon atom mass to 0
+                # Set atom mass to 0
                 atom.mass = 0.0 * unit.dalton
                 #print(atom.mass)
 
