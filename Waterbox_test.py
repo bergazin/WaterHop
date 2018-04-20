@@ -60,9 +60,9 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
                 #print(atom.mass)
 
     # Move the coordinates of each of the last waters atoms (the "protein") to the center of the system
-    atom.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
-    atom.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
-    atom.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
+    wat.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
+    wat.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
+    wat.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
     
     # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
