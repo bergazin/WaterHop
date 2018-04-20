@@ -1,5 +1,5 @@
 from __future__ import print_function
-from WaterMove import WaterTranslationRotationMove
+from WaterTranslationRotation import WaterTranslationRotationMove
 from blues.engine import MoveEngine
 from blues import utils
 from openmmtools import testsystems
@@ -10,33 +10,34 @@ from simtk import unit
 from optparse import OptionParser
 import sys
 import logging
-
+from blues.reporters import init_logger, BLUESHDF5Reporter, BLUESStateDataReporter
 
 def runNCMC(platform_name, nstepsNC, nprop, outfname):
     #Generate the ParmEd Structure
-    prmtop = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.prmtop' #topology
-    inpcrd = '/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.inpcrd' #coordinates
+    prmtop = '/home/bergazin/WaterHop/water/input_files/wall/oneWat.prmtop'
+    inpcrd = '/home/bergazin/WaterHop/water/input_files/wall/oneWat.inpcrd'
     structure = parmed.load_file(prmtop, xyz=inpcrd)
     print('Structure: %s' % structure.topology)
 
     #Define some options
-    opt = { 'temperature' : 300.0, 'friction' : 1, 'dt' : 0.002,
-            'nIter' : 100000, 'nstepsNC' : 5000, 'nstepsMD' : 5000, 'nprop' : 5,
-            'nonbondedMethod' : 'PME', 'nonbondedCutoff': 10,
-            'constraints': 'HBonds',
+    opt = { 'temperature' : 500.0, 'friction' : 1, 'dt' : 0.002,
+            'nIter' : 100000, 'nstepsNC' : 2500, 'nstepsMD' : 10000, 'nprop' : 5,
+            'nonbondedMethod' : 'PME', 'nonbondedCutoff': 10, 'constraints': 'HBonds',
             'trajectory_interval' : 1000, 'reporter_interval' : 1000,
             'ncmc_traj' : None, 'write_move' : False,
             'platform' : platform_name,
             'outfname' : 'testing',
             'verbose' : True}
 
+    logger = init_logger(logging.getLogger(), level=logging.INFO, outfname=opt['outfname'])
+    opt['Logger'] = logger
     ## Get the second water in the system, this acts as the "protein" in pure water tests
     # Documentation: http://parmed.github.io/ParmEd/html/amber.html#atom-element-selections
     # http://amber-md.github.io/pytraj/latest/atom_mask_selection.html
     #water_structure = parmed.load_file(prmtop)
     #protein_atoms = water_structure[':2']
-    #print(protein_atoms)
-    
+    #print("protein_atoms_NEW_TEST_345?", protein_atoms)
+
     ## To select the protein residues, and not the ligand residues...
     #protein_only_structure = parmed.load_file(prmtop)
     #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
