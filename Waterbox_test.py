@@ -47,23 +47,13 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     wat = md.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
     
     # Move the coordinates of each of the last waters atoms (the "protein") to the center of the system
-    wat.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
-    wat.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
-    wat.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
+    # wat.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
+    structure.atoms[6518].xx = [18.0208001,16.2210011,47.5159979]
+    structure.atoms[6519].xy = [19.1660004,16.2210011,47.5159979]
+    structure.atoms[6520].xz = [17.9679995,18.1479988,47.5159979]
     
     protein_atoms = wat.topology.select('resid 1916')
     print("protein",protein_atoms)
-    
-    # Set mass of the carbon walls to zero, this fixes/restrains them in place
-    # Set mass of the last water in the system to 0 to restrain in place
-    #residues = structure.topology.residues()
-    # Look for residues with resname 'WAL'
-    #for res in residues:
-    #    if res.name == 'WAL' or res.index == 1916:
-    #        for atom in res.atoms():
-                # Set atom mass to 0
-    #           atom.mass = 0.0 * unit.dalton
-                #print(atom.mass)
     
     # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
@@ -90,6 +80,8 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     for index in range(alch_num_atoms):
         if index < 777 or index > 6517:
             alch_system.setParticleMass(index, 0*unit.daltons)
+    
+    simulations.alch_system = simulations.generateAlchSystem(alch_system, range(alch_num_atoms))
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
