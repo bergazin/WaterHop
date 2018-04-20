@@ -78,7 +78,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
         if index < 777 or index > 6517:
             simulations.alch_system.setParticleMass(index, 0*unit.daltons)
     #after modifying the alch_system, need to pass it back to the SimulationFactory...
-    simulations.alch_system = simulations.generateAlchSystem(alch_system, range(alch_num_atoms))
+    #simulations.alch_system = simulations.generateAlchSystem(alch_system, range(alch_num_atoms))
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
