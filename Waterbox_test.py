@@ -33,20 +33,35 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     ## Get the second water in the system, this acts as the "protein" in pure water tests
     # Documentation: http://parmed.github.io/ParmEd/html/amber.html#atom-element-selections
     # http://amber-md.github.io/pytraj/latest/atom_mask_selection.html
-    water_structure = parmed.load_file(prmtop)
-    protein_atoms = water_structure[':2']
-    print(protein_atoms)
+    #water_structure = parmed.load_file(prmtop)
+    #protein_atoms = water_structure[':2']
+    #print(protein_atoms)
     
     ## To select the protein residues, and not the ligand residues...
     #protein_only_structure = parmed.load_file(prmtop)
     #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
 
-    ## Old water selesction way
-    #import mdtraj as md
-    #wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
-    #water_atom = wat.topology.select('resid 1')
+    ## Old water selection way
+    import mdtraj as md
+    wat = md.load('/home/bergazin/WaterHop/water/input_files/onlyWaterBox/BOX1.pdb')
+    water_atom = wat.topology.select('resid 1')
     #print(water_atom)
+    
+    # Set mass of the carbon walls to zero, this fixes/restrains them in place
+    # Set mass of the last water in the system to 0 to restrain in place
+    residues = structure.topology.residues()
+    # Look for residues with resname 'WAL'
+    for res in residues:
+        if res.name == 'WAL' or res.index == 1916::
+            for atom in res.atoms():
+                # Set carbon atom mass to 0
+                atom.mass = 0.0 * unit.dalton
+                #print(atom.mass)
 
+    # Move the coordinates of each of the last waters atoms (the "protein") to the center of the system
+    atom.xyz[0][6518] = np.array([1.80208001,1.62210011,4.75159979])*unit.nanometers
+    atom.xyz[0][6519] = np.array([1.91660004,1.62210011,4.75159979])*unit.nanometers
+    atom.xyz[0][6520] = np.array([1.79679995,1.81479988,4.75159979])*unit.nanometers
     # Define the 'model' object we are perturbing here.
     # Calculate particle masses of object to be moved
     water = WaterTranslationRotationMove(structure, protein_atoms, water_name='WAT')
