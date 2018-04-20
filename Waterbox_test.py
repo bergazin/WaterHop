@@ -56,13 +56,13 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     
     # Set mass of the carbon walls to zero, this fixes/restrains them in place
     # Set mass of the last water in the system to 0 to restrain in place
-    residues = structure.topology.residues()
+    #residues = structure.topology.residues()
     # Look for residues with resname 'WAL'
-    for res in residues:
-        if res.name == 'WAL' or res.index == 1916:
-            for atom in res.atoms():
+    #for res in residues:
+    #    if res.name == 'WAL' or res.index == 1916:
+    #        for atom in res.atoms():
                 # Set atom mass to 0
-                atom.mass = 0.0 * unit.dalton
+    #           atom.mass = 0.0 * unit.dalton
                 #print(atom.mass)
     
     # Define the 'model' object we are perturbing here.
