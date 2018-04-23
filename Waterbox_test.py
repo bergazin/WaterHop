@@ -66,7 +66,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     num_atoms = wat.n_atoms
     for index in range(num_atoms):
         if index < 777 or index > 6517:
-            openmm.System.setParticleMass(index, 0*unit.daltons)
+            openmm.System.setParticleMass(index=index, mass=0*unit.daltons)
     simulations.createSimulationSet()
 
      # Add reporters to MD simulation.
