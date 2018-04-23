@@ -63,11 +63,11 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     simulations = SimulationFactory(structure, mover, **opt)
     
     # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
+    simulations.createSimulationSet()
     num_atoms = wat.n_atoms
     for index in range(num_atoms):
         if index < 777 or index > 6517:
-            openmm.System.setParticleMass(index=index, mass=0*unit.daltons)
-    simulations.createSimulationSet()
+            simulations.system.setParticleMass(index, 0*unit.daltons)
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
