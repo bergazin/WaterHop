@@ -59,26 +59,15 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
 
     # Initialize object that proposes moves.
     mover = MoveEngine(water)
-
     # Generate the MD, NCMC, ALCHEMICAL Simulation objects
     simulations = SimulationFactory(structure, mover, **opt)
-    #system = simulations.generateSystem(structure, **opt)
     
     # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
-    num_atoms = simulations.system.getNumParticles()
+    num_atoms = wat.n_atoms
     for index in range(num_atoms):
         if index < 777 or index > 6517:
-            simulations.system.setParticleMass(index, 0*unit.daltons)
+            openmm.System.setParticleMass(index, 0*unit.daltons)
     simulations.createSimulationSet()
-    
-    #Modify alchemical system
-    #alch_system = simulations.generateAlchSystem(system, water.atom_indices)
-    alch_num_atoms = simulations.alch_system.getNumParticles()
-    for index in range(alch_num_atoms):
-        if index < 777 or index > 6517:
-            simulations.alch_system.setParticleMass(index, 0*unit.daltons)
-    #after modifying the alch_system, need to pass it back to the SimulationFactory...
-    #simulations.alch_system = simulations.generateAlchSystem(alch_system, range(alch_num_atoms))
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
