@@ -68,6 +68,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     for index in range(num_atoms):
         if index < 777 or index > 6517:
             simulations.system.setParticleMass(index, 0*unit.daltons)
+            simulations.alch_system.setParticleMass(index, 0*unit.daltons)
 
      # Add reporters to MD simulation.
     traj_reporter = openmm.app.DCDReporter(outfname+'-nc{}.dcd'.format(nstepsNC), opt['trajectory_interval'])
