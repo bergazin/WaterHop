@@ -229,7 +229,8 @@ class WaterTranslationRotationMove(Move):
 
             if 0 < water_index < 1914: #Don't want to switch alch. water vel/pos with itself or the 2nd water in the system (which is acting as protein)
                 water_choice = self.water_residues[water_index]
-
+                
+            #Select alch. waters oxygen and the "protein"/waters oxygen to be used for distance calculations (ie to see if it's in radius)
             oxygen_pos1 = np.array(water_choice[0])
             oxygen_pos = oxygen_pos1.flatten()
 
@@ -239,28 +240,21 @@ class WaterTranslationRotationMove(Move):
             
             #Update the positions from the simulation state.
             self.traj.xyz[0,:,:] = start_pos;
-
-
+            
+            #Compute distances
             pairs = self.traj.topology.select_pairs(oxygen_pos, protein_choice)
-            print("pairs",pairs)
             water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-            print("water_distance",water_distance)
             water_dist = np.linalg.norm(water_distance)
-            print("radius spans: ",self.radius.value_in_unit(unit.nanometers))
-            print("norm water_dist", water_dist)
+            # Check if the randomly chosen water is within the radius
             if water_dist <= (self.radius.value_in_unit(unit.nanometers)):
                 is_inside_sphere = True
 
         #replace chosen water's positions/velocities with alchemical water
         for i in range(3):
-            #set indices of the alchemical waters atoms equal to the indices of the starting positions of the random waters atoms
             switch_pos[self.atom_indices[i]] = start_pos[water_choice[i]]
-            #do the same for velocity
             switch_vel[self.atom_indices[i]] = start_vel[water_choice[i]]
-            #set indices of the randomly chosen waters atom equal to alchemical waters atom indices. Same w/ velocity
             switch_pos[water_choice[i]] = start_pos[self.atom_indices[i]]
             switch_vel[water_choice[i]] = start_vel[self.atom_indices[i]]
-            print("Velocities and positions have been switched")
 
         nc_context.setPositions(switch_pos)
         nc_context.setVelocities(switch_vel)
@@ -274,13 +268,13 @@ class WaterTranslationRotationMove(Move):
         #get the position of the system from the context
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
         protein_pos = before_move_pos[self.protein_atoms] 
-        #find the center of mass and the displacement
         prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) 
         sphere_displacement = self._random_sphere_point(self.radius) 
         movePos = np.copy(before_move_pos)*before_move_pos.unit 
+        
+        #Select alch. waters oxygen and the "protein"/waters oxygen to be used for distance calculations (ie to see if it's in radius)
         oxygen_pos1 = np.array(self.atom_indices[0])
         oxygen_pos = oxygen_pos1.flatten()
-
         protein_indices = self.protein_atoms
         protein_choice1 = np.array(protein_indices[0])
         protein_choice = protein_choice1.flatten()
@@ -291,14 +285,10 @@ class WaterTranslationRotationMove(Move):
         #Compute distances
         pairs = self.traj.topology.select_pairs(protein_choice, oxygen_pos)
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-        print("water_distance",water_distance)
 
         #if the alchemical water is within the radius, translate it
         if np.linalg.norm(water_distance) <= self.radius._value:
             for index, resnum in enumerate(self.atom_indices):
-                print("movePos[resnum]", movePos[resnum])
                 movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement 
-                print('before', before_move_pos[resnum])
-                print('after', movePos[resnum])
             context.setPositions(movePos)
         return context
