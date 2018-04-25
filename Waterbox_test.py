@@ -20,7 +20,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     print('Structure: %s' % structure.topology)
 
     #Define some options
-    opt = { 'temperature' : 500.0, 'friction' : 1, 'dt' : 0.002,
+    opt = { 'temperature' : 500.0, 'friction' : 1, 'dt' : 0.001,
             'nIter' : 100000, 'nstepsNC' : 2500, 'nstepsMD' : 10000, 'nprop' : 5,
             'nonbondedMethod' : 'PME', 'nonbondedCutoff': 10, 'constraints': 'HBonds',
             'trajectory_interval' : 1000, 'reporter_interval' : 1000,
