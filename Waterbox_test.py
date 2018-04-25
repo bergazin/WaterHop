@@ -71,6 +71,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
         if index < 777 or index > 6517:
             simulations.system.setParticleMass(index, 0*unit.daltons)
             simulations.alch_system.setParticleMass(index, 0*unit.daltons)
+            simulations.md.system.setParticleMass(index, 0*unit.daltons)
     
     #Energy minimize system
     simulations.md.minimizeEnergy(maxIterations=5000)
