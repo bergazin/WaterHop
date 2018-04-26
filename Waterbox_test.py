@@ -68,7 +68,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
     num_atoms = wat.n_atoms
     for index in range(num_atoms):
-        if index < 777 or index > 6518:
+        if index < 777 or index > 6517:
             simulations.system.setParticleMass(index, 0*unit.daltons)
             simulations.alch_system.setParticleMass(index, 0*unit.daltons)
             simulations.md.system.setParticleMass(index, 0*unit.daltons)
