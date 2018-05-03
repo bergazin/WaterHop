@@ -1,5 +1,5 @@
 from __future__ import print_function
-from WaterTranslationRotation import WaterTranslationRotationMove
+from WaterHop import WaterHop
 from blues.engine import MoveEngine
 from blues import utils
 from openmmtools import testsystems
@@ -31,15 +31,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
 
     logger = init_logger(logging.getLogger(), level=logging.INFO, outfname=opt['outfname'])
     opt['Logger'] = logger
-    ## Get the second water in the system, this acts as the "protein" in pure water tests
-    # Documentation: http://parmed.github.io/ParmEd/html/amber.html#atom-element-selections
-    # http://amber-md.github.io/pytraj/latest/atom_mask_selection.html
-    #water_structure = parmed.load_file(prmtop)
-    ## To select the protein residues, and not the ligand residues...
-    #protein_only_structure = parmed.load_file(prmtop)
-    #protein_atoms = protein_only_structure[':GLY,ALA,VAL,LEU,ILE,PRO,PHE,TYR,TRP,SER,THR,CYS,MET,ASN,GLN,LYS,ARG,HIS,ASP,GLU']
 
-    ## Old way
     import mdtraj as md
     wat = md.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
     protein_atoms = wat.topology.select('resid 1916')
@@ -54,7 +46,6 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     structure.atoms[6520].xy = np.array(18.1479988)
     
     # Define the 'model' object we are perturbing here.
-    # Calculate particle masses of object to be moved
     water = WaterTranslationRotationMove(structure, protein_atoms, water_name='WAT')
     water.topology = structure.topology
     water.positions = structure.positions
