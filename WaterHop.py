@@ -100,7 +100,7 @@ class Move(object):
         return context
 
 
-class WaterTranslationRotationMove(Move):
+class WaterHop(Move):
     """ Move that translates a random water within a specified radius of the protein's
     center of mass to another point within that radius, then rotates it around it's center of mass
     Parameters
