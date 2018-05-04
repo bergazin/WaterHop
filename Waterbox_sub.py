@@ -46,7 +46,7 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     structure.atoms[6520].xy = np.array(18.1479988)
     
     # Define the 'model' object we are perturbing here.
-    water = WaterTranslationRotationMove(structure, protein_atoms, water_name='WAT')
+    water = WaterHop(structure, protein_atoms, water_name='WAT')
     water.topology = structure.topology
     water.positions = structure.positions
 
