@@ -338,11 +338,7 @@ class Simulation(object):
         the current state of the MD simulation.
         """
         md_state0 = self.getStateInfo(self.md_sim.context, self.state_keys)
-        nc_state0 = self.getStateInfo(self.nc_context, self.state_keys)
-        
-        self.nc_sim.context.setPeriodicBoxVectors(*md_state0['box_vectors'])
-        print("Periodic vectors:", self.nc_sim.context.setPeriodicBoxVectors(*md_state0['box_vectors']))
-        
+        nc_state0 = self.getStateInfo(self.nc_context, self.state_keys)   
         self.nc_context.setPositions(md_state0['positions'])
         self.nc_context.setVelocities(md_state0['velocities'])
         self.setSimState('md', 'state0', md_state0)
@@ -564,6 +560,7 @@ class Simulation(object):
         #self.nc_context.setPositions(md_state0['positions'])
         #self.nc_context.setVelocities(md_state0['velocities'])
         self.nc_sim.context.setPeriodicBoxVectors(*md_state0['box_vectors'])
+        print("Periodic vectors:", self.nc_sim.context.setPeriodicBoxVectors(*md_state0['box_vectors']))
         self.nc_sim.context.setPositions(md_state0['positions'])
         self.nc_sim.context.setVelocities(md_state0['velocities'])
 
