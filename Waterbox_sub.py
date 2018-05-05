@@ -56,13 +56,17 @@ def runNCMC(platform_name, nstepsNC, nprop, outfname):
     simulations = SimulationFactory(structure, mover, **opt)
     simulations.createSimulationSet()
     
-    # set the masses of the carbon walls and the last water in the system to 0 to hold it in place
-    num_atoms = wat.n_atoms
-    for index in range(num_atoms):
-        if index < 777 or index > 6518:
-            simulations.system.setParticleMass(index, 0*unit.daltons)
-            simulations.alch_system.setParticleMass(index, 0*unit.daltons)
-            simulations.md.system.setParticleMass(index, 0*unit.daltons)
+    state1 = simulations.md.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+    box = state1.getPeriodicBoxVectors()
+    print("PB vectors (MD):", box)
+
+    state2 = simulations.alch.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+    box = state2.getPeriodicBoxVectors()
+    print("PB vectors (alch)", box)
+
+    state3 = simulations.nc.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+    box = state3.getPeriodicBoxVectors()
+    print("PB vectors (nc)", box)
     
     #Energy minimize system
     simulations.md.minimizeEnergy(maxIterations=5000)
