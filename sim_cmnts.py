@@ -547,7 +547,12 @@ class SimulationFactory(object):
 
     @staticmethod
     def print_host_info(simulation):
-        """Prints hardware related information for the simulation."""
+        """Prints hardware related information for the simulation.
+        Parameters
+        ----------
+        simulation : :class:`app.Simulation`
+            The simulation to print information for.
+        """
         # OpenMM platform information
         mmver = openmm.version.version
         mmplat = simulation.context.getPlatform()
