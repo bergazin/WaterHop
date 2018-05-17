@@ -117,14 +117,13 @@ class WaterTranslationRotationMove(Move):
 
     def __init__(self, structure, protein_atoms, water_name='WAT', radius=4.5*unit.nanometers):
         #initialize self attributes
-        self.radius = radius #
+        self.radius = radius 
         self.water_name = water_name
         self.water_residues = [] #contains indices of the atoms of the waters
         self.protein_atoms = protein_atoms #contains indices of the atoms in the protein residues
         #print("self.protein_atoms",self.protein_atoms)
         self.before_ncmc_check = True
         self.traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
-        print("radius:",radius)
 
         #go through the topology and identify water and protein residues
         residues = structure.topology.residues()
@@ -244,7 +243,6 @@ class WaterTranslationRotationMove(Move):
         nc_context.setPositions(switch_pos)
         nc_context.setVelocities(switch_vel)
         return nc_context
-
 
     def move(self, context):
         """
