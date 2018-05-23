@@ -274,7 +274,7 @@ class WaterTranslationRotationMove(Move):
 
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-
+        # Translate water to new location 1.4nm from the center of the system (determined by sphere_displacement)
         for index, resnum in enumerate(self.atom_indices):
             movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
 
