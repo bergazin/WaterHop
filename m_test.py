@@ -66,7 +66,7 @@ class Move(object):
     def afterMove(self, context):
         """This method is called at the end of the NCMC portion if the
         context needs to be checked or modified before performing the move
-        at the hterTranslationRotation.pyalfway point.
+        at the halfway point.
         Parameters
         ----------
         context: simtk.openmm.Context object
@@ -76,7 +76,6 @@ class Move(object):
         context: simtk.openmm.Context object
             The same input context, but whose context were changed by this function.
         """
-
         return context
 
     def _error(self, context):
@@ -102,7 +101,7 @@ class Move(object):
 
 class WaterTranslationRotationMove(Move):
     """ Move that translates a random water within a specified radius of the protein's
-    center of mass to another point within that radius, then rotates it around it's center of mass
+    center of mass to another point within that radius
     Parameters
     ----------
     structure:
@@ -115,12 +114,13 @@ class WaterTranslationRotationMove(Move):
             and the radius in which to randomly translate that water.
     """
 
-    def __init__(self, structure, protein_atoms, water_name='WAT', radius=1.4*unit.nanometers):
+    def __init__(self, structure, protein_atoms, water_name='WAT', radius=4.7*unit.nanometers):
         #initialize self attributes
-        self.radius = radius
+        self.radius = radius #
         self.water_name = water_name
         self.water_residues = [] #contains indices of the atoms of the waters
         self.protein_atoms = protein_atoms #contains indices of the atoms in the protein residues
+        #print("self.protein_atoms",self.protein_atoms)
         self.before_ncmc_check = True
         self.traj = mdtraj.load('/home/bergazin/WaterHop/water/input_files/wall/oneWat.pdb')
         print("radius:",radius)
@@ -220,24 +220,34 @@ class WaterTranslationRotationMove(Move):
         nc_context: simtk.openmm Context object
             The context which corresponds to the NCMC simulation.
         """
-
+        print('This is the start of the beforeMove function....')
         start_state = nc_context.getState(getPositions=True, getVelocities=True)
         start_pos = start_state.getPositions(asNumpy=True) #gets starting positions
+
+        print('start_pos', start_pos[self.atom_indices[0]]) #prints starting position of the first water atom
+
         start_vel = start_state.getVelocities(asNumpy=True) #gets starting velocities
         switch_pos = np.copy(start_pos)*start_pos.unit #starting position (a shallow copy) is * by start_pos.unit to retain units
         switch_vel = np.copy(start_vel)*start_vel.unit #starting vel (a shallow copy) is * by start_pos.unit to retain units
-        prot_com = self.getCenterOfMass(switch_pos[self.protein_atoms],
-                            masses = self.protein_mass)
-        # Choose a random water
-        while True:
+        prot_com = self.getCenterOfMass(switch_pos[self.protein_atoms], #passes in a copy of the protein atoms starting position
+                            masses = self.protein_mass) #passes in list of the proteins atoms masses
+        print("Looking for a random water inside the radius...")
+        is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
+        while not is_inside_sphere:
             water_index = np.random.choice(range(len(self.water_residues)))
-            # Exclude the first water in the system (which is the alchemical water) and the last water
-            # in the system, whcih is frozen in the center of the box and used for distance calculations
-            if 0 < water_index < 1914:
-                water_choice = self.water_residues[water_index]
-                break
 
+            if 0 < water_index < 1914: #Don't want to switch alch. water vel/pos with itself or the 2nd water in the system (which is acting as protein)
+                water_choice = self.water_residues[water_index]
+            self.traj.xyz[0,:,:] = start_pos;
+
+            pairs = self.traj.topology.select_pairs(np.array(water_choice[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
+            water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
+            water_dist = np.linalg.norm(water_distance)
+            if water_dist <= (self.radius.value_in_unit(unit.nanometers)):
+                is_inside_sphere = True
+        print("....a random water has been found inside the radius")
+        print("Now replacing the chosen water's positions/velocities with alchemical water")
         #replace chosen water's positions/velocities with alchemical water
         for i in range(3):
             #set indices of the alchemical waters atoms equal to the indices of the starting positions of the random waters atoms
@@ -247,6 +257,7 @@ class WaterTranslationRotationMove(Move):
             #set indices of the randomly chosen waters atom equal to alchemical waters atom indices. Same w/ velocity
             switch_pos[water_choice[i]] = start_pos[self.atom_indices[i]]
             switch_vel[water_choice[i]] = start_vel[self.atom_indices[i]]
+            print("Velocities and positions have been switched")
 
         print('after_switch', switch_pos[self.atom_indices[0]]) #prints the new indices of the alchemical water
         print('after_switch', switch_pos[self.atom_indices])
@@ -255,28 +266,56 @@ class WaterTranslationRotationMove(Move):
         print("This is the end of the beforeMove function...")
         return nc_context
 
-
     def move(self, context):
         """
         This function is called by the blues.MoveEngine object during a simulation.
         Translates the alchemical water randomly within a sphere of self.radius.
         """
+        #get the position of the system from the context
+        print("THIS IS THE MOVE FUNCTION")
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
         protein_pos = before_move_pos[self.protein_atoms] #gets the positions from the indices of the atoms in the protein residues in relation to the system
         #find the center of mass and the displacement
         prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
-
         sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
         movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
 
-        #Update positions for distance calculation
         self.traj.xyz[0,:,:] = movePos;
-
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-        # Translate water to new location 1.4nm from the center of the system (determined by sphere_displacement)
-        for index, resnum in enumerate(self.atom_indices):
-            movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
+        print("water_distance",water_distance)
 
+        # Translate the alchemical water 
+        #if np.linalg.norm(water_distance) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
+        for index, resnum in enumerate(self.atom_indices):
+            print("movePos[resnum]", movePos[resnum])
+            movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
+            print('before', before_move_pos[resnum])
+            print('after', movePos[resnum])
         context.setPositions(movePos)
         return context
+
+    def afterMove(self, nca_context):
+        """This method is called at the end of the NCMC portion if the
+        context needs to be checked or modified before performing the move
+        at the halfway point.
+        Parameters
+        ----------
+        context: simtk.openmm.Context object
+            Context containing the positions to be moved.
+        Returns
+        -------
+        context: simtk.openmm.Context object
+            The same input context, but whose context were changed by this function.
+        """
+        before_final_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
+        #Update positions for distance calculation
+        self.traj.xyz[0,:,:] = before_final_move_pos*before_final_move_pos.units;
+        
+        pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
+        water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
+        
+        print("water_distance",water_distance)
+        if np.linalg.norm(water_distance) <= self.radius._value:
+            
+        return nca_context
