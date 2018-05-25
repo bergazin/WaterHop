@@ -317,5 +317,6 @@ class WaterTranslationRotationMove(Move):
         
         print("water_distance",water_distance)
         if np.linalg.norm(water_distance) <= self.radius._value:
+            #### DO SOMETHING TO REJECT THE MOVE??? ####
             
         return nca_context
