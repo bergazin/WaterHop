@@ -163,12 +163,14 @@ class WaterTranslationRotationMove(Move):
         """function to generate a uniform random point
         in a sphere of a specified radius.
         Used to randomly translate the water molecule
+
         Parameters
         ----------
         radius: float
             Defines the radius of the sphere in which a point
             will be uniformly randomly generated.
         """
+        print("Radius of _random_sphere_point", radius)
         r = radius * ( np.random.random()**(1./3.) )  #r (radius) = specified radius * cubed root of a random number between 0.00 and 0.99999
         phi = np.random.uniform(0,2*np.pi) #restriction of phi (or azimuth angle) is set from 0 to 2pi. random.uniform allows the values to be chosen w/ an equal probability
         costheta = np.random.uniform(-1,1) #restriction set from -1 to 1
@@ -223,9 +225,7 @@ class WaterTranslationRotationMove(Move):
         print('This is the start of the beforeMove function....')
         start_state = nc_context.getState(getPositions=True, getVelocities=True)
         start_pos = start_state.getPositions(asNumpy=True) #gets starting positions
-
-        print('start_pos', start_pos[self.atom_indices[0]]) #prints starting position of the first water atom
-
+        #print('start_pos', start_pos[self.atom_indices[0]]) #prints starting position of the first water atom
         start_vel = start_state.getVelocities(asNumpy=True) #gets starting velocities
         switch_pos = np.copy(start_pos)*start_pos.unit #starting position (a shallow copy) is * by start_pos.unit to retain units
         switch_vel = np.copy(start_vel)*start_vel.unit #starting vel (a shallow copy) is * by start_pos.unit to retain units
@@ -257,8 +257,7 @@ class WaterTranslationRotationMove(Move):
             #set indices of the randomly chosen waters atom equal to alchemical waters atom indices. Same w/ velocity
             switch_pos[water_choice[i]] = start_pos[self.atom_indices[i]]
             switch_vel[water_choice[i]] = start_vel[self.atom_indices[i]]
-            print("Velocities and positions have been switched")
-
+            #print("Velocities and positions have been switched")
         print('after_switch', switch_pos[self.atom_indices[0]]) #prints the new indices of the alchemical water
         print('after_switch', switch_pos[self.atom_indices])
         nc_context.setPositions(switch_pos)
@@ -277,18 +276,19 @@ class WaterTranslationRotationMove(Move):
         protein_pos = before_move_pos[self.protein_atoms] #gets the positions from the indices of the atoms in the protein residues in relation to the system
         #find the center of mass and the displacement
         prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass) #gets protein COM
-        sphere_displacement = self._random_sphere_point(self.radius) #gets a uniform random point in a sphere of a specified radius
+
+        #Generate uniform random point in a sphere of a specified radius
+        sphere_displacement = self._random_sphere_point(radius=1.0*unit.nanometers)
         movePos = np.copy(before_move_pos)*before_move_pos.unit #makes a copy of the position of the system from the context
 
         self.traj.xyz[0,:,:] = movePos;
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-        print("water_distance",water_distance)
+        print("water distance",water_distance)
+        print("sphere displacement", sphere_displacement)
 
-        # Translate the alchemical water 
-        #if np.linalg.norm(water_distance) <= self.radius._value: #see if euc. distance of alch. water is within defined radius
+        # Translate the alchemical water
         for index, resnum in enumerate(self.atom_indices):
-            print("movePos[resnum]", movePos[resnum])
             movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement #new positions of the alch water
             print('before', before_move_pos[resnum])
             print('after', movePos[resnum])
@@ -308,15 +308,21 @@ class WaterTranslationRotationMove(Move):
         context: simtk.openmm.Context object
             The same input context, but whose context were changed by this function.
         """
-        before_final_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
+        print("Beginning of the afterMove")
+
+        before_final_move_pos = nca_context.getState(getPositions=True).getPositions(asNumpy=True)
+        #print("before_final_move_pos", before_final_move_pos)
+
         #Update positions for distance calculation
-        self.traj.xyz[0,:,:] = before_final_move_pos*before_final_move_pos.units;
-        
+        movePos_a = np.copy(before_final_move_pos)*before_final_move_pos.unit
+        self.traj.xyz[0,:,:] = movePos_a;
+        print("self.traj.xyz[0,:,:]",self.traj.xyz[0,:,:])
+
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
-        
+
         print("water_distance",water_distance)
         if np.linalg.norm(water_distance) <= self.radius._value:
-            #### DO SOMETHING TO REJECT THE MOVE??? ####
-            
+            nca_context._integrator.setGlobalVariableByName("protocol_work", 999999)
+        print("end of afterMove")
         return nca_context
