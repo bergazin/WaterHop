@@ -258,12 +258,12 @@ class WaterTranslation(Move):
         movePos = np.copy(before_move_pos)*before_move_pos.unit
 
         # Update positions from the simulation state before doing distance calculation
-        self.traj.xyz[0,:,:] = movePos;
+        #self.traj.xyz[0,:,:] = movePos;
 
         # Select pairs and compute the distance between the alchemical water's oxygen 
         # and the last water in the system via mdtraj
-        pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
-        water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
+        #pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
+        #water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
         
         # Translate the alchemical water - OLD
         #for index, resnum in enumerate(self.atom_indices):
