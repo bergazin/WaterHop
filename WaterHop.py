@@ -265,11 +265,22 @@ class WaterTranslation(Move):
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
         
-        # Translate the alchemical water
-        for index, resnum in enumerate(self.atom_indices):
-            print("movePos[resnum]", movePos[resnum])
+        # Translate the alchemical water - OLD
+        #for index, resnum in enumerate(self.atom_indices):
+        #    print("movePos[resnum]", movePos[resnum])
             # New pos = old pos - distance from frozen water + uniform point in a sphere of self.radius
-            movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement 
+        #    movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement
+        
+        # Translate the alchemical water - NEW
+        # Change oxygens coordinates with that of the random point inside the radius
+        movePos[self.atom_indices[0]] = sphere_displacement
+        # Get vector distance of the two hydrogens from the oxygen
+        H1V = movePos[self.atom_indices[1]] - before_move_pos[self.atom_indices[0]]
+        H2V = movePos[self.atom_indices[2]] - before_move_pos[self.atom_indices[0]]
+        # Move the hydrogens to new location (ie self.atom_indices[1] = hydrogen1 and self.atom_indices[0] = oxygen)
+        movePos[self.atom_indices[1]] = H1V + sphere_displacement
+        movePos[self.atom_indices[2]] = H2V + sphere_displacement
+        
         context.setPositions(movePos)
         return context
     
@@ -301,7 +312,7 @@ class WaterTranslation(Move):
         pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
         water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
         
-        # If the alchemical water is outside the radius, set the protocol work to a high value and trigger move rejection
+        # If the alchemical water is outside the radius, set the protocol work to a high value to trigger move rejection
         if np.linalg.norm(water_distance) > self.radius._value
             nca_context._integrator.setGlobalVariableByName("protocol_work", 999999)
  
