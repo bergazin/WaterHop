@@ -138,10 +138,6 @@ class WaterTranslation(Move):
         #self.atom_indices is used to define the alchemically treated region
         #of the system, in this case the first water in the system
         self.atom_indices = self.water_residues[0] #the atom indices of the first water, this is the alchemical water
-        self.topology_protein = structure[self.protein_atoms].topology
-        self.topology_water = structure[self.atom_indices].topology
-        self.water_mass = self.getMasses(self.topology_water)
-        self.protein_mass = self.getMasses(self.topology_protein)
 
 
     def _random_sphere_point(self, radius):
@@ -207,9 +203,7 @@ class WaterTranslation(Move):
         start_pos = start_state.getPositions(asNumpy=True) 
         start_vel = start_state.getVelocities(asNumpy=True) 
         switch_pos = np.copy(start_pos)*start_pos.unit 
-        switch_vel = np.copy(start_vel)*start_vel.unit 
-        prot_com = self.getCenterOfMass(switch_pos[self.protein_atoms], 
-                            masses = self.protein_mass) 
+        switch_vel = np.copy(start_vel)*start_vel.unit  
 
         is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
@@ -249,35 +243,21 @@ class WaterTranslation(Move):
         """
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
         protein_pos = before_move_pos[self.protein_atoms]
-        prot_com = self.getCenterOfMass(positions=protein_pos, masses=self.protein_mass)
         
         # Generate uniform random point in a sphere of a specified radius
         sphere_displacement = self._random_sphere_point(self.radius)
         
         # Make a copy of the position of the system from the context
         movePos = np.copy(before_move_pos)*before_move_pos.unit
-
-        # Update positions from the simulation state before doing distance calculation
-        #self.traj.xyz[0,:,:] = movePos;
-
-        # Select pairs and compute the distance between the alchemical water's oxygen 
-        # and the last water in the system via mdtraj
-        #pairs = self.traj.topology.select_pairs(np.array(self.atom_indices[0]).flatten(), np.array(self.protein_atoms[0]).flatten())
-        #water_distance = mdtraj.compute_distances(self.traj, pairs, periodic=True)
         
-        # Translate the alchemical water - OLD
-        #for index, resnum in enumerate(self.atom_indices):
-        #    print("movePos[resnum]", movePos[resnum])
-            # New pos = old pos - distance from frozen water + uniform point in a sphere of self.radius
-        #    movePos[resnum] = movePos[resnum] - water_distance*movePos.unit + sphere_displacement
-        
-        # Translate the alchemical water - NEW
-        # Change oxygens coordinates with that of the random point inside the radius
+        # Translate the alchemical water
+        # Set oxygens coordinates to random point inside the radius
         movePos[self.atom_indices[0]] = sphere_displacement
         # Get vector distance of the two hydrogens from the oxygen
+        # Here atom_indices[1] = hydrogen and atom_indices[0] = oxygen
         H1V = movePos[self.atom_indices[1]] - before_move_pos[self.atom_indices[0]]
         H2V = movePos[self.atom_indices[2]] - before_move_pos[self.atom_indices[0]]
-        # Move the hydrogens to new location (ie self.atom_indices[1] = hydrogen1 and self.atom_indices[0] = oxygen)
+        # Move the hydrogens to new location 
         movePos[self.atom_indices[1]] = H1V + sphere_displacement
         movePos[self.atom_indices[2]] = H2V + sphere_displacement
         
