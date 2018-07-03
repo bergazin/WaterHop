@@ -140,10 +140,11 @@ class WaterTranslation(Move):
         self.atom_indices = self.water_residues[0] #the atom indices of the first water, this is the alchemical water
 
 
-    def _random_sphere_point(self, radius):
+    def _random_sphere_point(self, radius, protein_oxygen):
         """function to generate a uniform random point
         in a sphere of a specified radius.
         Used to randomly translate the water molecule
+
         Parameters
         ----------
         radius: float
@@ -154,10 +155,10 @@ class WaterTranslation(Move):
         phi = np.random.uniform(0,2*np.pi) #restriction of phi (or azimuth angle) is set from 0 to 2pi. random.uniform allows the values to be chosen w/ an equal probability
         costheta = np.random.uniform(-1,1) #restriction set from -1 to 1
         theta = np.arccos(costheta) #calculate theta, the angle between r and Z axis
-        x = np.sin(theta) * np.cos(phi) #x,y,and z are cartesian coordinates
+        x = np.sin(theta) * np.cos(phi) #x,y,and z = cartesian coordinates
         y = np.sin(theta) * np.sin(phi)
         z = np.cos(theta)
-        sphere_point = np.array([x, y, z]) * r
+        sphere_point = np.array([x, y, z]) * r + protein_oxygen
         return sphere_point #sphere_point = a random point with an even distribution
 
     def getMasses(self, topology):
@@ -208,8 +209,6 @@ class WaterTranslation(Move):
         is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
         while not is_inside_sphere:
-            #water_index = np.random.choice(range(len(self.water_residues)))
-            
             #Choose a random water. Exclude 1st water in the system (the alch. water) and the 
             #last water (which is held in place and used for distance calculations) from selection
             water_index = np.random.choice(range(1, 1914))
@@ -242,10 +241,11 @@ class WaterTranslation(Move):
         Translates the alchemical water randomly within a sphere of self.radius.
         """
         before_move_pos = context.getState(getPositions=True).getPositions(asNumpy=True)
-        protein_pos = before_move_pos[self.protein_atoms]
+       
+        protein_oxygen = before_move_pos[self.protein_atoms[0]]
         
-        # Generate uniform random point in a sphere of a specified radius
-        sphere_displacement = self._random_sphere_point(self.radius)
+        #Generate uniform random point in a sphere of a specified radius
+        sphere_displacement = self._random_sphere_point(self.radius, protein_oxygen)
         
         # Make a copy of the position of the system from the context
         movePos = np.copy(before_move_pos)*before_move_pos.unit
@@ -253,10 +253,12 @@ class WaterTranslation(Move):
         # Translate the alchemical water
         # Set oxygens coordinates to random point inside the radius
         movePos[self.atom_indices[0]] = sphere_displacement
+        
         # Get vector distance of the two hydrogens from the oxygen
         # Here atom_indices[1] = hydrogen and atom_indices[0] = oxygen
         H1V = movePos[self.atom_indices[1]] - before_move_pos[self.atom_indices[0]]
         H2V = movePos[self.atom_indices[2]] - before_move_pos[self.atom_indices[0]]
+        
         # Move the hydrogens to new location 
         movePos[self.atom_indices[1]] = H1V + sphere_displacement
         movePos[self.atom_indices[2]] = H2V + sphere_displacement
