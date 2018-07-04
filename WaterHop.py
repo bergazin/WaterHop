@@ -209,7 +209,7 @@ class WaterTranslation(Move):
         is_inside_sphere = False
         #TODO use random.shuffle to pick random particles (limits upper bound)
         while not is_inside_sphere:
-            #Choose a random water. Exclude 1st water in the system (the alch. water) and the 
+            #Choose a random water. Exclude 1st water in the system (the alch. water --idx 0) and the 
             #last water (which is held in place and used for distance calculations) from selection
             water_index = np.random.choice(range(1, 1914))
             water_choice = self.water_residues[water_index]
